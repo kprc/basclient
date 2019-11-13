@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/kprc/basserver/app/cmd"
+import "github.com/kprc/basclient/app/cmd"
 
 var (
 	Version   string
