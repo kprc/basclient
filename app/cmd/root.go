@@ -19,7 +19,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"encoding/hex"
 	"strings"
 	"github.com/btcsuite/btcutil/base58"
 	"net"
@@ -29,6 +28,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/kprc/basserver/dns/server"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"encoding/base64"
 )
 
 //var cfgFile string
@@ -49,34 +49,43 @@ var rootCmd = &cobra.Command{
 		}
 		qs:=querystring
 
-		if domainnametyp != "dn" && encodetyp != "base64"{
+		if domainnametyp != "dn"{
 			var b []byte
 			var err error
 
-			if encodetyp == "base16" && strings.ToLower(qs[:2]) == "0x"{
-				if domainnametyp == "eth"{
+			switch encodetyp {
+			case "base64":
+				b,err = base64.StdEncoding.DecodeString(qs)
+				if err!=nil{
+					fmt.Println("error:",err)
+					return
+				}
+			case "base16":
+				if strings.ToLower(qs[:2]) == "0x"{
 					b,err = hexutil.Decode(qs)
 					if err!=nil{
 						fmt.Println(err)
+						return
 					}
 				}else{
-					b,err =hex.DecodeString(qs[2:])
-					if err!=nil{
-						fmt.Println("please input correct address1")
-					}
+					fmt.Println("base16 address must have 0x prefix")
+					return
 				}
+			case "base58":
+				b = base58.Decode(qs)
+				if len(b) == 0{
+					fmt.Println("base58 address error")
+					return
+				}
+			default:
+				fmt.Println("no enodetyp input")
+				return
 
+			}
+			if len(b) > 0{
 				qs = base58.Encode(b)
-
 			}
 
-			if encodetyp == "base58"{
-				//nothing todo...
-			}
-
-			if len(b) == 0{
-				fmt.Println("please input correct address2")
-			}
 		}
 
 		rh:=strings.Split(remotehost,":")
@@ -115,9 +124,15 @@ var rootCmd = &cobra.Command{
 			fmt.Println("command line failed, please try again")
 		}else{
 			fmt.Println("Src Address:",querystring)
-			rr:=msg.Answer[0]
-			a:=rr.(*dns.A)
-			fmt.Println("Ip  Address:",a.A.String())
+			if msg.Rcode == dns.RcodeBadKey {
+				fmt.Println("Not Found in Blockchain Address System")
+			}else if len(msg.Answer) > 0{
+				rr:=msg.Answer[0]
+				a:=rr.(*dns.A)
+				fmt.Println("Ip  Address:",a.A.String())
+			}else{
+				fmt.Println("No Answer")
+			}
 		}
 	},
 }
