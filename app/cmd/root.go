@@ -18,17 +18,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"strings"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/spf13/cobra"
 	"net"
 	"strconv"
+	"strings"
 
-	"github.com/kprc/basclient/dnsclient"
-	"github.com/miekg/dns"
-	"github.com/kprc/basserver/dns/server"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"encoding/base64"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/kprc/basclient/dnsclient"
+	"github.com/kprc/basserver/dns/server"
+	"github.com/miekg/dns"
 )
 
 //var cfgFile string
@@ -41,39 +41,39 @@ var querystring string
 var rootCmd = &cobra.Command{
 	Use:   "bas",
 	Short: "Send A DNS Request And Get the Result",
-	Long: `Send A DNS Request And Get the Result`,
+	Long:  `Send A DNS Request And Get the Result`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(querystring) == 0 {
 			fmt.Println("Please input domain for search")
 			return
 		}
-		qs:=querystring
+		qs := querystring
 
-		if domainnametyp != "dn"{
+		if domainnametyp != "dn" {
 			var b []byte
 			var err error
 
 			switch encodetyp {
 			case "base64":
-				b,err = base64.StdEncoding.DecodeString(qs)
-				if err!=nil{
-					fmt.Println("error:",err)
+				b, err = base64.StdEncoding.DecodeString(qs)
+				if err != nil {
+					fmt.Println("error:", err)
 					return
 				}
 			case "base16":
-				if strings.ToLower(qs[:2]) == "0x"{
-					b,err = hexutil.Decode(qs)
-					if err!=nil{
+				if strings.ToLower(qs[:2]) == "0x" {
+					b, err = hexutil.Decode(qs)
+					if err != nil {
 						fmt.Println(err)
 						return
 					}
-				}else{
+				} else {
 					fmt.Println("base16 address must have 0x prefix")
 					return
 				}
 			case "base58":
 				b = base58.Decode(qs)
-				if len(b) == 0{
+				if len(b) == 0 {
 					fmt.Println("base58 address error")
 					return
 				}
@@ -82,55 +82,54 @@ var rootCmd = &cobra.Command{
 				return
 
 			}
-			if len(b) > 0{
+			if len(b) > 0 {
 				qs = base58.Encode(b)
 			}
 
 		}
 
-		rh:=strings.Split(remotehost,":")
-		if len(rh)>2{
+		rh := strings.Split(remotehost, ":")
+		if len(rh) > 2 {
 			fmt.Println("please input correct host")
 			return
 		}
 
 		rhost := rh[0]
-		ip:=net.ParseIP(rh[0])
-		if ip == nil{
+		ip := net.ParseIP(rh[0])
+		if ip == nil {
 			fmt.Println("please input correct host")
 			return
 		}
 
-
-		if len(rh) == 1{
+		if len(rh) == 1 {
 			rhost += ":53"
-		}else{
-			port,err:=strconv.Atoi(rh[1])
-			if err!=nil || (port==0 || port>65535){
+		} else {
+			port, err := strconv.Atoi(rh[1])
+			if err != nil || (port == 0 || port > 65535) {
 				fmt.Println("please input correct host")
 				return
 			}
-			rhost += ":"+rh[1]
+			rhost += ":" + rh[1]
 		}
 
-		typ:= dns.TypeA
+		typ := dns.TypeA
 
-		if  domainnametyp != "dn"{
+		if domainnametyp != "dn" {
 			typ = server.TypeBCAddr
 		}
-		qs1:=qs+"."
-		msg:=dnsclient.SendAndRcv(rhost,qs1,typ)
-		if msg == nil{
+		qs1 := qs + "."
+		msg := dnsclient.SendAndRcv(rhost, qs1, typ)
+		if msg == nil {
 			fmt.Println("command line failed, please try again")
-		}else{
-			fmt.Println("Src Address:",querystring)
+		} else {
+			fmt.Println("Src Address:", querystring)
 			if msg.Rcode == dns.RcodeBadKey {
 				fmt.Println("Not Found in Blockchain Address System")
-			}else if len(msg.Answer) > 0{
-				rr:=msg.Answer[0]
-				a:=rr.(*dns.A)
-				fmt.Println("Ip  Address:",a.A.String())
-			}else{
+			} else if len(msg.Answer) > 0 {
+				rr := msg.Answer[0]
+				a := rr.(*dns.A)
+				fmt.Println("Ip  Address:", a.A.String())
+			} else {
 				fmt.Println("No Answer")
 			}
 		}
@@ -159,11 +158,12 @@ func init() {
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	rootCmd.Flags().StringVarP(&encodetyp,"encode-type","e","base16","encoding type [base16,base58,base64]")
-	rootCmd.Flags().StringVarP(&domainnametyp,"domain-type","t","dn","domain name type [dn:domain name,eth: ethereum address,ipv4,other: other address]")
-	rootCmd.Flags().StringVarP(&remotehost,"remote-bas-server","r","103.45.98.72","remote bas server (also you can input port like as 103.45.98.72:53)")
-	rootCmd.Flags().StringVarP(&querystring,"query-string","q","","domain name or ethereum address or other address")
+	rootCmd.Flags().StringVarP(&encodetyp, "encode-type", "e", "base16", "encoding type [base16,base58,base64]")
+	rootCmd.Flags().StringVarP(&domainnametyp, "domain-type", "t", "dn", "domain name type [dn:domain name,eth: ethereum address,ipv4,other: other address]")
+	rootCmd.Flags().StringVarP(&remotehost, "remote-bas-server", "r", "103.45.98.72", "remote bas server (also you can input port like as 103.45.98.72:53)")
+	rootCmd.Flags().StringVarP(&querystring, "query-string", "q", "", "domain name or ethereum address or other address")
 }
+
 //
 //// initConfig reads in config file and ENV variables if set.
 //func initConfig() {
