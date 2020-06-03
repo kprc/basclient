@@ -28,8 +28,8 @@ import (
 
 	"github.com/kprc/basclient/dnsclient"
 	//"github.com/kprc/basserver/dns/server"
-	"github.com/miekg/dns"
 	"encoding/hex"
+	"github.com/BASChain/go-bas-dns-server/lib/dns"
 )
 
 //var cfgFile string
@@ -68,13 +68,13 @@ var rootCmd = &cobra.Command{
 					//	fmt.Println(err)
 					//	return
 					//}
-					b:=make([]byte,128)
-					n,err:=hex.Decode(b,[]byte(qs[:2]))
-					if err!=nil{
+					b := make([]byte, 128)
+					n, err := hex.Decode(b, []byte(qs[:2]))
+					if err != nil {
 						fmt.Println(err)
 						return
 					}
-					b=b[:n]
+					b = b[:n]
 				} else {
 					fmt.Println("base16 address must have 0x prefix")
 					return
@@ -134,15 +134,18 @@ var rootCmd = &cobra.Command{
 			if msg.Rcode == dns.RcodeBadKey {
 				fmt.Println("Not Found in Blockchain Address System")
 			} else if len(msg.Answer) > 0 {
-				for i:=0;i<len(msg.Answer);i++{
+				for i := 0; i < len(msg.Answer); i++ {
 					rr := msg.Answer[i]
 					switch rr.(type) {
 					case *dns.A:
 						a := rr.(*dns.A)
 						fmt.Println("Ip  Address:", a.A.String())
 					case *dns.CNAME:
-						cn:=rr.(*dns.CNAME)
-						fmt.Println("CName:",cn.Target)
+						cn := rr.(*dns.CNAME)
+						fmt.Println("CName:", cn.Target)
+					case *dns.NULL:
+						alias := rr.(*dns.NULL)
+						fmt.Println("Null:", alias.Data)
 					default:
 						fmt.Println("Not support")
 					}

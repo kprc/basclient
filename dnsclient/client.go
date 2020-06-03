@@ -2,7 +2,7 @@ package dnsclient
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
+	"github.com/BASChain/go-bas-dns-server/lib/dns"
 	"math/rand"
 )
 
